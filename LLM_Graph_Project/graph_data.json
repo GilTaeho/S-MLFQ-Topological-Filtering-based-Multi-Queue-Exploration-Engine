@@ -1,0 +1,32 @@
+[
+    {
+        "source": "리좀",
+        "target": "어떤 지점",
+        "relation": "속해있음",
+        "weight": 0.5
+    },
+    {
+        "source": "어떤 지점",
+        "target": "다른 어떤 지점",
+        "relation": "연결될 수 있음",
+        "weight": 0.5
+    },
+    {
+        "source": "리좀",
+        "target": "반드시 연결되어야 함",
+        "relation": "속해있음",
+        "weight": 0.5
+    },
+    {
+        "source": "리좀",
+        "target": "사물들의 틈새",
+        "relation": "속해있음",
+        "weight": 0.5
+    },
+    {
+        "source": "사물들의 틔새",
+        "target": "무한히 팽창하는 중간(milieu)",
+        "relation": "속해있음",
+        "weight": 0.5
+    }
+]

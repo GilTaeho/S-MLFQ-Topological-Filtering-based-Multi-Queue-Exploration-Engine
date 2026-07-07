@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>XAI 지식 그래프 통합 시스템</title>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        body { background: #0f172a; color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; }
+        .panel { background: #1e293b; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        
+        textarea { width: 100%; height: 80px; border-radius: 8px; padding: 10px; background: #334155; color: white; border: 1px solid #475569; }
+        button { width: 100%; padding: 10px; margin-top: 10px; background: #deff9a; color: #0f172a; font-weight: bold; cursor: pointer; border: none; border-radius: 6px; }
+        
+        #network { height: 400px; background: #0f172a; border-radius: 8px; border: 1px solid #334155; margin-top: 10px; }
+        .queue-box { height: 350px; background: #000; padding: 10px; border-radius: 8px; overflow-y: auto; font-family: monospace; font-size: 12px; border: 1px solid #334155; }
+        .q-header { font-weight: bold; color: #deff9a; margin-bottom: 5px; }
+        #chatOutput { height: 150px; background: #000; color: #deff9a; padding: 10px; border-radius: 8px; overflow-y: auto; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Unified S-MLFQ & Knowledge Graph Dashboard</h1>
+    
+    <div class="panel">
+        <h2>1. 비정형 텍스트 지식 추출</h2>
+        <textarea id="userInput" placeholder="문서를 입력하세요..."></textarea>
+        <button id="extractBtn" onclick="analyzeText()">지식 그래프 추출 및 맵핑</button>
+    </div>
+    
+    <div class="main-grid">
+        <div class="panel">
+            <h3>2. 동적 지식 그래프 (Vis.js)</h3>
+            <div id="network"></div>
+        </div>
+
+        <div class="panel">
+            <h3>3. S-MLFQ 엔진 탐색 & 큐 상태</h3>
+            <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                <input type="text" id="sourceNode" placeholder="출발지" style="flex:1">
+                <input type="number" id="budgetInput" value="15" style="width: 60px;">
+                <button onclick="askChatbot()" style="margin:0; width: 80px;">탐색</button>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <div style="flex:1"><div class="q-header">Q0</div><div id="q0-out" class="queue-box"></div></div>
+                <div style="flex:1"><div class="q-header">Q1</div><div id="q1-out" class="queue-box"></div></div>
+                <div style="flex:1"><div class="q-header">Q2</div><div id="q2-out" class="queue-box"></div></div>
+            </div>
+            <div id="chatOutput">> 엔진 대기 중...</div>
+        </div>
+    </div>
+
+    <script>
+        // Vis.js 그래프 렌더링
+        function renderGraph(edges) {
+            const nodes = new vis.DataSet();
+            const visEdges = new vis.DataSet();
+            edges.forEach(e => {
+                if(!nodes.get(e.source)) nodes.add({id: e.source, label: e.source});
+                if(!nodes.get(e.target)) nodes.add({id: e.target, label: e.target});
+                visEdges.add({from: e.source, to: e.target, label: e.relation});
+            });
+            new vis.Network(document.getElementById('network'), {nodes, edges: visEdges}, {});
+        }
+
+        async function analyzeText() {
+            const text = document.getElementById('userInput').value;
+            const res = await fetch('/process', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text}) });
+            const data = await res.json();
+            renderGraph(data.edges);
+        }
+
+        async function askChatbot() {
+            const source = document.getElementById('sourceNode').value;
+            const budget = document.getElementById('budgetInput').value;
+            const res = await fetch('/find_path', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({source, budget: parseInt(budget)}) });
+            const data = await res.json();
+            document.getElementById('chatOutput').innerText = data.response;
+            updateQueueDisplay(data.response);
+        }
+
+        function updateQueueDisplay(logs) {
+            const q0 = document.getElementById('q0-out'), q1 = document.getElementById('q1-out'), q2 = document.getElementById('q2-out');
+            q0.innerHTML = q1.innerHTML = q2.innerHTML = '';
+            logs.split('\n').forEach(line => {
+                if (line.includes("Q0")) q0.innerHTML += `<div>${line}</div>`;
+                if (line.includes("Q1")) q1.innerHTML += `<div>${line}</div>`;
+                if (line.includes("Q2")) q2.innerHTML += `<div>${line}</div>`;
+            });
+        }
+    </script>
+</body>
+</html>
